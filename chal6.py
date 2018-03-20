@@ -46,7 +46,7 @@ def hamming_distance(s1, s2):
 #To get an accurate difference we go to the binary level
 a = b"this is a test"
 b = b"wokka wokka!!!"
-print(hamming_distance(a, b))
+print("Hamming distance test : ", hamming_distance(a, b))
 
 f = open("6.txt")
 a = ''.join(f.read().strip().split('\n'))
@@ -74,11 +74,6 @@ sorted(ham, key=lambda s: s[0])
 #choose the first keysize
 keysize = ham[0][1]
 
-
-cha = []
-for i in range(keysize):
-    cha.append([])
-for i in range(len(ciphertext)):
-    cha[i % keysize].append(ciphertext[i])
-xorbrute(cha)
-print(cha)
+#Need to now take the first byte of each key and do a xor bruteforce
+#Statistical analysis can then be run across  all of the bytes to determine
+#the best statiscally likely character for the keysize

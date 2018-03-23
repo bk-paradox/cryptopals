@@ -15,7 +15,7 @@ def xor_repeating_key(string, key):
     d = binascii.unhexlify(string)
     k = binascii.unhexlify(key)
     test = list(map(lambda c,z: (c^z), d, cycle(k)))
-    ret = binascii.hexlify(bytes(test))
+    ret = binascii.hexlify(bytes(test)) #return as hex string
     return str(ret, 'utf-8')
 
 #send hex srings

@@ -1,7 +1,6 @@
 #Comments
 #Dont want docstring
-from binascii import a2b_base64,hexlify
-from common import (hamming_distance,xor_bruteforce_single)
+
 """
 https://cryptopals.com/sets/1/challenges/6
 Break repeating-key XOR
@@ -40,57 +39,59 @@ Breaking repeating-key XOR ("Vigenere") statistically is obviously an academic e
 No, that's not a mistake.
 We get more tech support questions for this challenge than any of the other ones. We promise, there aren't any blatant errors in this text. In particular: the "wokka wokka!!!" edit distance really is 37.
 """
+from itertools import combinations,zip_longest
+from binascii import a2b_base64,hexlify
+from common import (hamming_distance,xor_bruteforce_single,xor_repeating_key)
 
+def find_xor_keysize(d):
+    """Given some ciphertext determine the most likely keysize from 2,42
 
-#To get an accurate difference we go to the binary level
-a = b"this is a test"
-b = b"wokka wokka!!!"
-assert(hamming_distance(a, b) == 37) # Test to see if hamming distance is working correctly
+    Args:
+        d (bytes): the cipertext to determine keysize.
 
-with open("6.txt") as f:
-    a = ''.join(f.read().strip().split('\n'))
-    ciphertext = a2b_base64(a)
-ham = []
+    Returns:
+        int: the keysize.
 
-for keysize in range(2,40):
-    chunks = []
-    for i in range(0, len(ciphertext), keysize):
-        #Create keysize chunks to measure the distance
-        chunks.append(ciphertext[i:keysize + i])
-
-    distances = []
-    for i in range(0, 8, 2): #Take the first 4 samples
-        distances.append(hamming_distance(chunks[i], chunks[i+1]) / keysize)
     """
-    for z in range(0,len(chunks)):
-        for y in range(1,len(chunks)):
-            distances.append((hamming_distance(chunks[z], chunks[y]) / keysize))
+    for keysize in range(2,42):
+        chunks = [d[i:i+keysize] for i in range(0, len(d), keysize)]
+        pairs = list(combinations(chunks, 2))
+        distance = [hamming_distance(p[0], p[1]) /float(keysize) for p in pairs]
+        return sum(distance) / len(distance)
+
+
+def break_xor_key(d, k):
+    from collections import Counter
+    """Note: Given a ciphertext and keysize, break the ciphertext into silos
+             The ciphertext will be put into buckets to be bruteforced.
+    Args:
+        d (bytes): the ciphertext to determine keys
+        k (bytes): keysize (predicted)
+
+    Returns:
+        bytes: the bytes of the key.
     """
-#Average the hamming distance for chunks of the current keysize.
-    average_distance = sum(distances) / len(distances)
-    ham.append((average_distance,keysize))
-    # print("Keysize : ", keysize, "\tNormalized ham : ", average_distance)
-#sort based on lowest hamming score.
-sorted(ham, key=lambda s: s[0])
+    chunks = [d[i:i+k] for i in range(0, len(d), k)]
+    Blocks = list(zip_longest(*chunks, fillvalue=0))
+    a = [xor_bruteforce_single(bytes(i))[0] for i in Blocks ]
+    return bytes(a)
 
-#choose the first keysize
-keysize = ham[0][1]
-print("Most likely to be a keysize of : ", keysize)
-#Need to now take the first byte of each key and do a xor bruteforce
-#transpose the block, make a block that is the first byte of every block,
-#and a block that is the second byte of every block, and so on.
+def main():
+    a = b"this is a test"
+    b = b"wokka wokka!!!"
+    assert(hamming_distance(a, b) == 37) # Test to see if hamming distance is working correctly
 
-cha = []
-#create a list of lists to cover a byte array for each byte within the chunk
-for i in range(keysize):
-    cha.append([])
+    with open("6.txt") as f:
+        a = ''.join(f.read().strip().split('\n'))
+        ciphertext = a2b_base64(a)
 
-#Break the ciphertext out into their respective lists
-for a in range(len(ciphertext)):
-    #go through ciphertext assigning bytes to respective byte arrays
-    #may be a more efficent way to do this!!
-    cha[a % keysize].append(ciphertext[a])
+    keysize = find_xor_keysize(ciphertext)
+    print("Most likely to be a keysize of : ", int(keysize))
+    key = break_xor_key(ciphertext, int(keysize))
+    print("Key determined to be : ", key)
+    plaintext = xor_repeating_key(ciphertext, key)
+    print(plaintext)
 
-#Implement combining the two keys to attempt xor_repeating_key with possibility.
-test = xor_bruteforce_single(hexlify(bytes(cha[0])))
-print(test)
+
+if __name__ == '__main__':
+    main()

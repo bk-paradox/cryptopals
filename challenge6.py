@@ -43,25 +43,37 @@ from itertools import combinations,zip_longest
 from binascii import a2b_base64,hexlify
 from common import (hamming_distance,xor_bruteforce_single,xor_repeating_key)
 
-def find_xor_keysize(d):
+def find_keysize(d):
     """Given some ciphertext determine the most likely keysize from 2,42
 
     Args:
         d (bytes): the cipertext to determine keysize.
 
     Returns:
+        int: the most likely keysize.
+
+    """
+    return min(range(2,42), key=lambda k: pulledpork(d,k))
+
+def pulledpork(d, keysize):
+    """Calculate the hamming string for each keysize chunk of ciphertext
+    limited to first 4 bytes to reduce processing divide by keysize
+
+    Args:
+        d (bytes): the cipertext to determine keysize.
+        keysize (int): a keysize to find the hamming distance.
+
+    Returns:
         int: the keysize.
 
     """
-    for keysize in range(2,42):
-        chunks = [d[i:i+keysize] for i in range(0, len(d), keysize)]
-        pairs = list(combinations(chunks, 2))
-        distance = [hamming_distance(p[0], p[1]) /float(keysize) for p in pairs]
-        return sum(distance) / len(distance)
+    chunks = [d[i:i+keysize] for i in range(0, len(d), keysize)][0:4] #Only 4 chunks
+    pairs = list(combinations(chunks, 2))
+    distance = [hamming_distance(p[0], p[1]) /float(keysize) for p in pairs]
+    return sum(distance) / len(distance)
 
 
 def break_xor_key(d, k):
-    from collections import Counter
     """Note: Given a ciphertext and keysize, break the ciphertext into silos
              The ciphertext will be put into buckets to be bruteforced.
     Args:
@@ -85,7 +97,7 @@ def main():
         a = ''.join(f.read().strip().split('\n'))
         ciphertext = a2b_base64(a)
 
-    keysize = find_xor_keysize(ciphertext)
+    keysize = find_keysize(ciphertext)
     print("Most likely to be a keysize of : ", int(keysize))
     key = break_xor_key(ciphertext, int(keysize))
     print("Key determined to be : ", key)

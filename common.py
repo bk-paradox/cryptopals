@@ -111,9 +111,5 @@ def char_freq(buf):
     return score
 
 #Takes two byte arrays
-def hamming_distance(s1, s2):
-    a = bin(int(binascii.hexlify(s1),16))
-    b = bin(int(binascii.hexlify(s2),16))
-    #Compare all mistmatches between corespondng postions in the two inputs
-    #summing the sequence with false and true values being interpreted as zero and one
-    return sum(el1 != el2 for el1,el2 in zip(a,b))
+def hamming_distance(x, y):
+    return sum([bin(x[i] ^ y[i]).count('1') for i in range(len(x))])
